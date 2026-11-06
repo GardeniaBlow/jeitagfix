@@ -13,6 +13,8 @@ through a datapack silently disappears from the client:
 
 This mod makes JEI's fallback **non-destructive**: JEI still gets its recipes, your tags stay.
 
+**Download:** [jeitagfix-1.0.0.jar](https://github.com/GardeniaBlow/jeitagfix/releases/latest/download/jeitagfix-1.0.0.jar) — drop it in `mods/`. Client-side only.
+
 ---
 
 ## Symptoms
@@ -127,7 +129,7 @@ beyond JEI itself.
 
 ## Building
 
-Standard Fabric Loom setup:
+Standard Fabric Loom setup. The Gradle wrapper is not committed, so generate it once (`gradle wrapper`, or let your IDE do it) before:
 
 ```bash
 ./gradlew build        # jar lands in build/libs/
@@ -135,7 +137,7 @@ Standard Fabric Loom setup:
 
 Without network access, `build-offline.ps1` reproduces the same jar with nothing but a JDK 25
 and the jars already in your launcher's `libraries/` directory (this is how the released
-artifact was built).
+artifact — 6738 bytes, built with `--release 21` — was produced).
 
 ## This is not JEI-specific
 
