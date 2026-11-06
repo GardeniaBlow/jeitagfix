@@ -1,0 +1,26 @@
+# Build output
+build/
+out/
+pkg/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!src/**/*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Loom
+run/
+remappedSrc/
+.loom-cache/

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "jeitagfix",
+  "version": "1.0.0",
+  "name": "JEI Tag Fix (unofficial)",
+  "description": "Stops JEI's client-side recipe fallback from wiping tags that came from the server, which hides server-provided dialog buttons in the pause menu and breaks custom datapack tags.",
+  "authors": [
+    "GardeniaBlow"
+  ],
+  "contact": {
+    "homepage": "https://github.com/GardeniaBlow/jeitagfix",
+    "sources": "https://github.com/GardeniaBlow/jeitagfix",
+    "issues": "https://github.com/GardeniaBlow/jeitagfix/issues"
+  },
+  "license": "MIT",
+  "icon": "assets/jeitagfix/icon.png",
+  "environment": "client",
+  "depends": {
+    "fabricloader": ">=0.19.0",
+    "minecraft": "~26.3",
+    "jei": "*"
+  },
+  "mixins": [
+    "jeitagfix.mixins.json"
+  ]
+}

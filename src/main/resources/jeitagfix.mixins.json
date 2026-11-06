@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "jeitagfix.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "VanillaClientRecipeLoaderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
