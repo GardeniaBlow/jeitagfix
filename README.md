@@ -8,8 +8,9 @@ If a server does not sync recipes to JEI, JEI rebuilds its recipe list locally �
 so it rebinds **every tag in every registry** to "vanilla only". Anything your server provided
 through a datapack silently disappears from the client:
 
-- server-provided dialog buttons vanish from the pause menu
-  (`minecraft:pause_screen_additions` is one of the casualties)
+- the pause-menu entry a server declares through `minecraft:pause_screen_additions` vanishes
+  (`pause_screen_additions` is one of the casualties; a single dialog in that tag becomes one
+  pause-menu button, several become the `minecraft:custom_options` list)
 - custom item / block / any-other tags stop working
 - nothing is logged at ERROR level, which is why this is so hard to track down
 
@@ -24,9 +25,11 @@ This mod makes JEI's fallback **non-destructive**: JEI still gets its recipes, y
 This started as a player problem, not a modding one.
 
 I play on a server that ships a datapack which adds a dialog and registers it in
-`minecraft:pause_screen_additions`, so that a "server quick commands" button shows up in the
-pause menu and its actions are bound to a hotkey. On a vanilla client it worked exactly as the
-server intended.
+`minecraft:pause_screen_additions`, so that an extra button shows up in the pause menu and the
+same dialog is reachable through a hotkey as well (`minecraft:quick_actions`). The label on that
+button is the dialog's own `external_title`, written by the server — on that server it reads
+「服务器快捷指令」. That is the server's wording, not a vanilla feature name. On a vanilla client
+it worked exactly as the server intended.
 
 Then I switched to a modpack and the button was simply gone — same server, same version, same
 account. The server was clearly still sending everything (other players saw the button, and the
@@ -62,7 +65,7 @@ The pause-menu case, which is what led to this mod: a server datapack adds a
 `minecraft:dialog` and references it from `minecraft:pause_screen_additions`. Vanilla shows a
 button for it in the pause menu. With JEI installed, the button is gone.
 
-![Same server, same account, same Minecraft 26.3 — left: modpack with JEI, the server's button is absent; right: vanilla client, the "服务器快捷指令" (server quick commands) button is there](docs/pause-menu-comparison.png)
+![Same server, same account, same Minecraft 26.3 — left: modpack with JEI, the server's pause-menu button is absent; right: vanilla client, the button the server declared in `minecraft:pause_screen_additions` is there (its label 「服务器快捷指令」 is the dialog's own title)](docs/pause-menu-comparison.png)
 
 Left is the modpack, right is the same player on the same server with a vanilla client. The
 button the server asked for is in the red box on the right, and simply is not there on the left.
@@ -105,7 +108,7 @@ The two missing ones were exactly the two provided by the server datapack.
 ## Minecraft 26.2 is not affected — this is a 26.3-only regression
 
 Same server, same JEI fallback log line, 26.2 client on the left, 26.3 client on the right.
-The pause-menu button and the `quick_actions` keybinding both work on 26.2.
+On 26.2 the pause-menu entry and the `quick_actions` hotkey both still work.
 
 ```
 # 26.2 client, logs/latest.log
@@ -183,9 +186,11 @@ Success looks like this in `logs/latest.log`:
 
 - Minecraft **26.3**, Fabric Loader **0.19.5+**. The mod declares `minecraft: ~26.3` and will
   not load on 26.2 — **26.2 does not need it** (see the branch comparison above).
-- JEI **31.7 through 31.17** are all affected — the destructive code is not new, so
-  **upgrading JEI will not fix this**. Verified against 31.3.0.17, 31.4.0.19, 31.7.0.38,
-  31.16.0.83 and 31.17.0.109.
+- **Every 26.3 build of JEI is affected** — the destructive code shipped with the very first
+  26.3 build and is still there in the newest one, so **upgrading JEI will not fix this**.
+  Bytecode-verified on 31.0.0.3, 31.0.0.5, 31.0.0.7, 31.1.0.12, 31.3.0.15, 31.3.0.17,
+  31.4.0.19, 31.7.0.31, 31.7.0.38, 31.14.0.72, 31.16.0.83 and 31.17.0.109; 31.0.0.3 is the
+  oldest 26.3 build published, so there is no older 26.3 build to fall back to.
 - Client-side only. Safe to install on a client joining any server; on servers that *do* sync
   recipes the fallback never runs and this mod does nothing at all.
 
@@ -193,7 +198,8 @@ Success looks like this in `logs/latest.log`:
 
 All three must hold:
 
-1. **26.3** with JEI from the `31.x` branch (31.3 through 31.17 measured).
+1. **26.3** with any JEI build from the `31.x` branch (31.0.0.3 through 31.17.0.109 measured —
+   i.e. all of them).
 2. JEI starts **without** a non-empty recipe set — i.e. the fallback branch in
    `JeiStarter#start` is taken. Vanilla's own `ClientboundUpdateRecipesPacket` carries only
    `itemSets` and `stonecutterRecipes`, never the recipe table itself, so a plain
