@@ -210,6 +210,47 @@ touched — verified by A/B against one server, same client, only the server-sid
 
 The 508 → 236 drop is the vanilla-only recomputation, which is what makes this visible at all.
 
+## Can the server fix it?
+
+Partly — but there is no setting, command, or config option anywhere that switches this on.
+
+**No config exists.** Minecraft's own protocol never sends the recipe table:
+`ClientboundUpdateRecipesPacket` carries only `itemSets` and `stonecutterRecipes` (true on both
+26.2 and 26.3). Nothing in `server.properties`, `spigot.yml`, `paper-global.yml` or
+`purpur.yml` relates to recipe sync or tag sync. So "just turn on recipe sync server-side" is
+not a thing on vanilla, Paper, Leaf or Purpur.
+
+**But a server can fix it by re-sending the tag packet.** What JEI damages is the live
+`Registry`'s tag set; one more `ClientboundUpdateTagsPacket` rebuilds it from the server's real
+data. Measured on a Fabric 26.3 test server against a clean client (Fabric API + JEI 31.16.0.83,
+**no jeitagfix**), datapack providing `pause_screen_additions`:
+
+| moment | `pause_screen_additions` | tags in `minecraft:item` | button |
+|---|---|---|---|
+| tick 80, just joined | 0 | 236 | absent |
+| tick 800, 40 s later | 0 | 236 | absent |
+| after `/reload` | 0 | 236 | absent |
+| after a bare tag re-broadcast | **1** | **507** | **present** |
+| 60 s after that | 1 | 507 | still present |
+
+`/reload` *does* re-broadcast the tags — `PlayerList#reloadResources` sends
+`ClientboundUpdateTagsPacket` unconditionally — but the same reload also makes the client reload
+its resource packs, which restarts JEI, which runs the fallback again and wipes the tags a second
+time. The two effects cancel out. A bare tag packet triggers no resource reload, so what it
+restores stays restored.
+
+In practice:
+
+| server type | can fix it? | how |
+|---|---|---|
+| Fabric, JEI installed server-side | yes, cleanest | the client gets real recipes, so the fallback never runs |
+| Fabric, no JEI server-side | yes | a tiny mod or command that re-broadcasts `ClientboundUpdateTagsPacket` |
+| Paper / Leaf / Purpur | only with a plugin | needs ProtocolLib or PacketEvents to send the packet by hand |
+| Vanilla | no | no plugin API, no way to send it |
+
+For a player on a server they do not control — the usual case — none of this is actionable, and
+the client-side fix is the only option.
+
 ## Known limitations
 
 - The mixin targets `mezz.jei.common.recipes.VanillaClientRecipeLoader#loadVanillaRecipeRegistry`

@@ -204,6 +204,44 @@ java.lang.IllegalStateException: Trying to access unbound tag
 
 那个 508 → 236 的落差，就是「只用原版重算」的结果，也是这个问题唯一可见的痕迹。
 
+## 服务器端能修吗？
+
+能修一部分，但**没有任何设置、指令或配置项可以直接打开它**。
+
+**不存在这样的配置。** Minecraft 自己的协议从不下发配方表：`ClientboundUpdateRecipesPacket`
+只有 `itemSets` 和 `stonecutterRecipes` 两个字段（26.2 和 26.3 都是如此）。`server.properties`、
+`spigot.yml`、`paper-global.yml`、`purpur.yml` 里也没有任何跟配方同步或 tag 同步相关的项。
+所以在原版、Paper、Leaf、Purpur 上，"服务器端把配方同步打开"这件事本身就不存在。
+
+**但服务器可以通过重发 tag 包来修。** JEI 破坏的是活动 `Registry` 的 tag 集合；再发一次
+`ClientboundUpdateTagsPacket`，就能用服务器上的真实数据把它重建回来。在一台 Fabric 26.3
+测试服 + 干净客户端（Fabric API + JEI 31.16.0.83，**不装 jeitagfix**）上实测，数据包提供
+`pause_screen_additions`：
+
+| 时刻 | `pause_screen_additions` | `minecraft:item` 里的 tag 数 | 按钮 |
+|---|---|---|---|
+| tick 80，刚进服 | 0 | 236 | 无 |
+| tick 800，40 秒后 | 0 | 236 | 无 |
+| 执行 `/reload` 后 | 0 | 236 | 无 |
+| 单独重发一次 tag 包后 | **1** | **507** | **有** |
+| 之后 60 秒 | 1 | 507 | 仍有 |
+
+`/reload` **确实**会重发 tag —— `PlayerList#reloadResources` 会无条件发送
+`ClientboundUpdateTagsPacket` —— 但同一次 reload 还会让客户端重载资源包，导致 JEI 重启，
+于是回退再跑一遍，把 tag 又抹一次。两个效果互相抵消。而单独发一个 tag 包不会触发资源重载，
+所以恢复回来的东西就留住了。
+
+现实中：
+
+| 服务器类型 | 能修吗 | 怎么做 |
+|---|---|---|
+| Fabric，服务端装了 JEI | 能，最干净 | 客户端能拿到真配方，回退根本不会跑 |
+| Fabric，服务端没装 JEI | 能 | 一个小 mod 或指令，重新广播 `ClientboundUpdateTagsPacket` |
+| Paper / Leaf / Purpur | 只能靠插件 | 需要 ProtocolLib 或 PacketEvents 手动发这个包 |
+| 原版 | 不能 | 没有插件 API，没有办法发这个包 |
+
+对于在别人服务器上玩的玩家（也就是绝大多数情况），这些都用不上，客户端侧的修复是唯一选项。
+
 ## 已知限制
 
 - mixin 是按名字定位 `mezz.jei.common.recipes.VanillaClientRecipeLoader#loadVanillaRecipeRegistry`
