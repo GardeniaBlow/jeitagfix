@@ -62,6 +62,12 @@ The pause-menu case, which is what led to this mod: a server datapack adds a
 `minecraft:dialog` and references it from `minecraft:pause_screen_additions`. Vanilla shows a
 button for it in the pause menu. With JEI installed, the button is gone.
 
+![Same server, same account, same Minecraft 26.3 — left: modpack with JEI, the server's button is absent; right: vanilla client, the "服务器快捷指令" (server quick commands) button is there](docs/pause-menu-comparison.png)
+
+Left is the modpack, right is the same player on the same server with a vanilla client. The
+button the server asked for is in the red box on the right, and simply is not there on the left.
+No error, no log line, nothing to grep for — which is exactly why this is worth a screenshot.
+
 ## Why it happens
 
 `mezz.jei.common.recipes.VanillaClientRecipeLoader#loadVanillaRecipeRegistry` builds a

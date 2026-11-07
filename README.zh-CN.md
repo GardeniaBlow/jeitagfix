@@ -59,6 +59,11 @@ tag 数量是 238、装了之后是 236，这个差值一下就暴露了问题�
 `minecraft:pause_screen_additions` 里引用它。原版会在暂停菜单里为它显示一个按钮。
 装了 JEI 之后，按钮就没了。
 
+![同一个服务器、同一个账号、同一个 Minecraft 26.3 —— 左边是装了 JEI 的整合包，服务端的按钮消失；右边是原版客户端，红框里就是「服务器快捷指令」按钮](docs/pause-menu-comparison.png)
+
+左边是整合包，右边是同一位玩家用原版客户端连同一台服务器。红框里那个按钮是服务端要求显示的，
+在左边就是没有。没有任何报错，没有任何日志，也没有任何东西可以 grep —— 这正是值得放一张截图的原因。
+
 ## 为什么会这样
 
 `mezz.jei.common.recipes.VanillaClientRecipeLoader#loadVanillaRecipeRegistry` 构造了一个
