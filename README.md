@@ -56,6 +56,9 @@ worldPendingTags.forEach(Registry.PendingTags::apply);  // <-- wipes server tags
 **replaces `MappedRegistry.allTags` wholesale** with the set it was given. Since that set was
 computed from the vanilla pack alone, every server tag goes with it.
 
+This only happens on the **fallback** branch. If the server syncs recipes, `loadVanillaRecipeRegistry`
+is never entered and nothing is rebound — see *When this triggers* below.
+
 Measured before/after on a test server (item registry tag count):
 
 | | tags in `minecraft:item` | `minecraft:pause_screen_additions` |
@@ -64,6 +67,46 @@ Measured before/after on a test server (item registry tag count):
 | with JEI | 236 | 0 entries |
 
 The two missing ones were exactly the two provided by the server datapack.
+
+## Minecraft 26.2 is not affected — this is a 26.3-only regression
+
+Same server, same JEI fallback log line, 26.2 client on the left, 26.3 client on the right.
+The pause-menu button and the `quick_actions` keybinding both work on 26.2.
+
+```
+# 26.2 client, logs/latest.log
+[11:02:27] Connecting to mckkk.com, 25565
+[11:02:33] Loaded 1585 vanilla recipes from client resources.
+[11:02:34] [CHAT] This Leaf server does not provide recipes to JEI. ...
+
+# 26.3 client, logs/latest.log
+[01:31:12] Loaded 2042 vanilla recipes from the client recipe registry.
+[01:31:12] [CHAT] This Leaf server does not provide recipes to JEI. ...
+```
+
+Both fallbacks ran. Only one of them destroyed tags. The two JEI branches contain **completely
+different implementations** of the same class:
+
+| | 26.2 branch (`30.x`) | 26.3 branch (`31.x`) |
+|---|---|---|
+| method | `getVanillaRecipes` only | `getVanillaRecipes` + `loadVanillaRecipeRegistry` |
+| how recipes are read | `SimpleJsonResourceReloadListener.scanDirectory(rm, RECIPE_LISTER, ops, Recipe.CODEC, map)` | `RegistryDataLoader.load(...)` re-reads the registries |
+| `PendingTags::apply` | **none** | two calls |
+| effect on the live registry | none — pending tags only feed a temporary `RegistryOps` | `allTags` replaced wholesale |
+| log line | `Loaded {} vanilla recipes from client resources.` | `... from the client recipe registry.` |
+
+The 26.2 implementation is exactly mezz's original fallback from
+[`274fd56a`](https://github.com/mezz/JustEnoughItems/commit/274fd56a841d3d4d3fea703eb4b93e4eb4554437)
+(July 2026), and it is still there in the newest 26.2 build (`30.48.0.244`, checked October 2026):
+`javap -c` finds no `apply` call at all.
+
+What happened on 26.3: the port to the new datapack-registry loading path
+([`077f5c55`](https://github.com/mezz/JustEnoughItems/commit/077f5c55b9b377ae24f6fe5645967fc19a2ae26c))
+had to rebuild recipes from `RegistryDataLoader` instead of scanning JSON, and the two `apply()`
+calls were added so that the rebuilt data would take effect — but they were applied to the
+**live** registries, not to a throwaway copy.
+
+So "it works on 26.2, breaks on 26.3" is expected, not a modpack problem.
 
 ## Why "just skip the `apply()` calls" does not work
 
@@ -104,12 +147,40 @@ Success looks like this in `logs/latest.log`:
 
 ## Compatibility
 
-- Minecraft **26.3**, Fabric Loader **0.19.5+**
+- Minecraft **26.3**, Fabric Loader **0.19.5+**. The mod declares `minecraft: ~26.3` and will
+  not load on 26.2 — **26.2 does not need it** (see the branch comparison above).
 - JEI **31.7 through 31.17** are all affected — the destructive code is not new, so
   **upgrading JEI will not fix this**. Verified against 31.3.0.17, 31.4.0.19, 31.7.0.38,
   31.16.0.83 and 31.17.0.109.
 - Client-side only. Safe to install on a client joining any server; on servers that *do* sync
   recipes the fallback never runs and this mod does nothing at all.
+
+## When this triggers (and when it does not)
+
+All three must hold:
+
+1. **26.3** with JEI from the `31.x` branch (31.3 through 31.17 measured).
+2. JEI starts **without** a non-empty recipe set — i.e. the fallback branch in
+   `JeiStarter#start` is taken. Vanilla's own `ClientboundUpdateRecipesPacket` carries only
+   `itemSets` and `stonecutterRecipes`, never the recipe table itself, so a plain
+   Paper/Leaf/vanilla server always lands here. (Fabric servers can push real recipes through
+   `fabric-recipe-api-v1` — JEI registers `jei:jei_shaped` / `jei:jei_smelting` as synchronised
+   serializers, but only when JEI is installed **on the server** too.)
+3. The server does send tags from a datapack (for example a `minecraft:dialog` referenced from
+   `minecraft:pause_screen_additions`).
+
+If the server does sync recipes, `loadVanillaRecipeRegistry` is never called and no tags are
+touched — verified by A/B against one server, same client, only the server-side JEI differing:
+
+| | server has JEI (sync active) | server has no JEI (fallback) |
+|---|---|---|
+| `Internal.hasClientSyncedRecipes` | **true** | false |
+| `Internal.hasClientFallbackRecipes` | false | **true** |
+| `minecraft:pause_screen_additions` | **1 entry** | 0 entries |
+| tags in `minecraft:item` | **508** | 236 |
+| pause-menu button | **present** | absent |
+
+The 508 → 236 drop is the vanilla-only recomputation, which is what makes this visible at all.
 
 ## Known limitations
 
