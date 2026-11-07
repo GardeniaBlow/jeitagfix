@@ -1,5 +1,7 @@
 # JEI Tag Fix (unofficial)
 
+**English** | [简体中文](README.zh-CN.md)
+
 Stops **JEI**'s client-side recipe fallback from wiping the tags your server sent you.
 
 If a server does not sync recipes to JEI, JEI rebuilds its recipe list locally — and in doing
@@ -14,6 +16,32 @@ through a datapack silently disappears from the client:
 This mod makes JEI's fallback **non-destructive**: JEI still gets its recipes, your tags stay.
 
 **Download:** [jeitagfix-1.0.0.jar](https://github.com/GardeniaBlow/jeitagfix/releases/latest/download/jeitagfix-1.0.0.jar) — drop it in `mods/`. Client-side only.
+
+---
+
+## Why I made this
+
+This started as a player problem, not a modding one.
+
+I play on a server that ships a datapack which adds a dialog and registers it in
+`minecraft:pause_screen_additions`, so that a "server quick commands" button shows up in the
+pause menu and its actions are bound to a hotkey. On a vanilla client it worked exactly as the
+server intended.
+
+Then I switched to a modpack and the button was simply gone — same server, same version, same
+account. The server was clearly still sending everything (other players saw the button, and the
+same dialog would still pop up from an in-game item), so it had to be the client. I spent a long
+time disabling UI mods, resource packs, renderers — none of it mattered, and nothing was ever
+logged as an error.
+
+It only came out once I stopped guessing and measured: a small probe mod dumped the dialog
+registry and the tag state right after joining. The dialog **was** there; the tag that pointed at
+it was empty. A vanilla item tag count of 238 on a client without JEI versus 236 with it made the
+shape of the bug obvious, and bisecting the mod list pinned it on JEI in a few rounds.
+
+So the goal of this mod is narrow and concrete: **let JEI do its job without it silently deleting
+what the server sent.** If you found this page because you were staring at a missing button that
+only exists when a certain mod is installed, you are in exactly the situation I was in.
 
 ---
 
