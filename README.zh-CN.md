@@ -2,6 +2,11 @@
 
 [English](README.md) | **简体中文**
 
+# 作者已经在31 . 18 . 0 . 117版本中修复了这个问题。
+[issue](https://github.com/mezz/JustEnoughItems/issues/4619#issuecomment-7012945420)
+
+**如果你因为某些原因不得不使用JEI的未修复版本，你可以选择使用这个补丁。**
+
 阻止 **JEI** 的客户端配方回退机制抹掉服务器下发给你的 tag。
 
 如果服务器没有把配方同步给 JEI，JEI 会在本地重建配方列表 —— 而在重建过程中，它会把
