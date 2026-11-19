@@ -2,7 +2,8 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-# The author has fixed this problem in the 31.18.0.117version.[issue](https://github.com/mezz/JustEnoughItems/issues/4619#issuecomment-7012945420)
+# The author has fixed this problem in the 31.18.0.117version.
+[issue](https://github.com/mezz/JustEnoughItems/issues/4619#issuecomment-7012945420)
 
 **If you have to use the unrepaired version of JEI for some reasons, you can choose to use this patch.**
 
